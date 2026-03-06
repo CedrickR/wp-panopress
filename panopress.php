@@ -128,6 +128,9 @@ function pp_default_settings(): void {
 	$pp_settings[PP_SETTINGS_UPLOAD_DIR]     = $pp_wp_upload_dir;
 	$pp_settings[PP_SETTINGS_ALT]            = '';
 	$pp_settings[PP_SETTINGS_TITLE]          = '';
+	$pp_settings[PP_SETTINGS_PREVIEW]        = '';
+	$pp_settings[PP_SETTINGS_VIEWER_NAME]    = '';
+	$pp_settings[PP_SETTINGS_VIEWER_DIR]     = '';
 	$pp_settings[PP_SETTINGS_PLAY_BUTTON]    = true;
 	$pp_settings[PP_SETTINGS_USE_VIEWER_DIR] = false;
 	$pp_settings[PP_SETTINGS_WMODE]          = 'auto';
@@ -373,45 +376,56 @@ function pp_embed( array $settings, ?array $params = null, string $type = PP_VIE
 	global $pp_id_counter;
 	$id = 'pp_' . $pp_id_counter++;
 
-	if ( pp_is_mobile() && $settings[PP_SETTINGS_PANOBOX_ACTIVE] ) {
-		$settings[PP_SETTINGS_PANOBOX_ACTIVE] = $settings[PP_SETTINGS_PANOBOX_MOBILE];
+	$panobox_active = $settings[PP_SETTINGS_PANOBOX_ACTIVE] ?? false;
+	$panobox_mobile = $settings[PP_SETTINGS_PANOBOX_MOBILE] ?? false;
+	$panobox_wmode  = $settings[PP_SETTINGS_PANOBOX_WMODE]  ?? 'auto';
+	$wmode          = $settings[PP_SETTINGS_WMODE]           ?? 'auto';
+	$viewer_name    = $settings[PP_SETTINGS_VIEWER_NAME]     ?? '';
+	$width          = $settings[PP_SETTINGS_WIDTH]           ?? '';
+	$height         = $settings[PP_SETTINGS_HEIGHT]          ?? '';
+	$title          = $settings[PP_SETTINGS_TITLE]           ?? '';
+	$alt_text       = $settings[PP_SETTINGS_ALT]             ?? '';
+	$play_button    = $settings[PP_SETTINGS_PLAY_BUTTON]     ?? false;
+	$preview        = $settings[PP_SETTINGS_PREVIEW]         ?? '';
+	$file           = $settings[PP_SETTINGS_FILE]            ?? '';
+
+	if ( pp_is_mobile() && $panobox_active ) {
+		$panobox_active = $panobox_mobile;
 	}
 
 	if ( $type === PP_VIEWER_TYPE_FLASH ) {
-		$params['wmode'] = $settings[PP_SETTINGS_PANOBOX_ACTIVE]
-			? $settings[PP_SETTINGS_PANOBOX_WMODE]
-			: $settings[PP_SETTINGS_WMODE];
+		$params['wmode'] = $panobox_active ? $panobox_wmode : $wmode;
 	}
 
 	$embed = [
 		PP_SETTINGS_ID            => $id,
 		PP_SETTINGS_VIEWER_TYPE   => $type,
 		PP_SETTINGS_VIEWER_VRSION => $version,
-		PP_SETTINGS_VIEWER_NAME   => $settings[PP_SETTINGS_VIEWER_NAME],
-		PP_SETTINGS_WIDTH         => $settings[PP_SETTINGS_WIDTH],
-		PP_SETTINGS_HEIGHT        => $settings[PP_SETTINGS_HEIGHT],
-		PP_SETTINGS_TITLE         => $settings[PP_SETTINGS_TITLE],
-		PP_SETTINGS_ALT           => $settings[PP_SETTINGS_ALT],
-		PP_SETTINGS_PLAY_BUTTON   => $settings[PP_SETTINGS_PLAY_BUTTON],
-		PP_SETTINGS_PANOBOX       => $settings[PP_SETTINGS_PANOBOX_ACTIVE],
-		PP_SETTINGS_PREVIEW       => $settings[PP_SETTINGS_PREVIEW],
-		PP_SETTINGS_FILE          => $settings[PP_SETTINGS_FILE],
+		PP_SETTINGS_VIEWER_NAME   => $viewer_name,
+		PP_SETTINGS_WIDTH         => $width,
+		PP_SETTINGS_HEIGHT        => $height,
+		PP_SETTINGS_TITLE         => $title,
+		PP_SETTINGS_ALT           => $alt_text,
+		PP_SETTINGS_PLAY_BUTTON   => $play_button,
+		PP_SETTINGS_PANOBOX       => $panobox_active,
+		PP_SETTINGS_PREVIEW       => $preview,
+		PP_SETTINGS_FILE          => $file,
 		PP_SETTINGS_PARAMS        => $params,
 	];
 
-	$w   = esc_attr( $settings[PP_SETTINGS_WIDTH] );
-	$h   = esc_attr( $settings[PP_SETTINGS_HEIGHT] );
-	$alt = esc_html( $settings[PP_SETTINGS_ALT] );
+	$w   = esc_attr( $width );
+	$h   = esc_attr( $height );
+	$alt = esc_html( $alt_text );
 
 	$html = "\n<!-- " . PP_APP_NAME . ' [' . PP_APP_VERSION . "] -->\n";
 
-	if ( empty( $settings[PP_SETTINGS_PREVIEW] ) && $settings[PP_SETTINGS_PANOBOX_ACTIVE] ) {
+	if ( empty( $preview ) && $panobox_active ) {
 		$html .= '<div class="pp-embed">' . "\n";
 		$html .= '<div id="' . esc_attr( $id ) . '">' . $alt . '</div>' . "\n";
 	} else {
 		$preview_html = '';
-		if ( ! empty( $settings[PP_SETTINGS_PREVIEW] ) ) {
-			$preview_html = '<img src="' . esc_url( $settings[PP_SETTINGS_PREVIEW] ) . '" style="width:' . $w . '; height:' . $h . '" alt="' . $alt . '"/>';
+		if ( ! empty( $preview ) ) {
+			$preview_html = '<img src="' . esc_url( $preview ) . '" style="width:' . $w . '; height:' . $h . '" alt="' . $alt . '"/>';
 		}
 		$html .= '<div class="pp-embed" style="position:relative;">' . "\n";
 		$html .= '<div id="' . esc_attr( $id ) . '" style="width:' . $w . '; height:' . $h . '">'
@@ -662,8 +676,8 @@ function pp_sohrtcode_handler( array $attributes ): string {
 	}
 
 	// Encode les espaces dans les URLs
-	$settings[PP_SETTINGS_PREVIEW] = str_replace( ' ', '%20', $settings[PP_SETTINGS_PREVIEW] );
-	$settings[PP_SETTINGS_FILE]    = str_replace( ' ', '%20', $settings[PP_SETTINGS_FILE] );
+	$settings[PP_SETTINGS_PREVIEW] = str_replace( ' ', '%20', $settings[PP_SETTINGS_PREVIEW] ?? '' );
+	$settings[PP_SETTINGS_FILE]    = str_replace( ' ', '%20', $settings[PP_SETTINGS_FILE]    ?? '' );
 
 	// Traitement des fichiers XML
 	if ( $settings[PP_SETTINGS_TYPE] === PP_FILE_TYPE_XML ) {
