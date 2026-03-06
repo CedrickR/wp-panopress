@@ -1,239 +1,330 @@
 <?php
+// Empêche l'accès direct au fichier.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 $pp_option_page = null;
+
 /***********************************************************************
- * admin init action
+ * Initialisation de l'admin
  **********************************************************************/
-function pp_admin_init() {
-	wp_register_script( 'pp_admin_js', plugins_url( '/js/admin.js?v='. PP_APP_VERSION , dirname( __FILE__ ) ) );
+function pp_admin_init(): void {
+	wp_register_script(
+		'pp_admin_js',
+		plugins_url( '/js/admin.js', dirname( __FILE__ ) ),
+		[],
+		PP_APP_VERSION
+	);
 	pp_add_tynymce_button();
 }
+
 /***********************************************************************
- * add admin_menu
+ * Ajout du menu d'administration
  **********************************************************************/
-function pp_admin_menu() {
+function pp_admin_menu(): void {
 	global $pp_option_page;
-	$pp_option_page = add_options_page( PP_APP_NAME . ' ' . pp__( 'Settings'), PP_APP_NAME, 'manage_options', strtolower( PP_APP_NAME ), 'pp_edit_settings' );
+	$pp_option_page = add_options_page(
+		PP_APP_NAME . ' ' . pp__( 'Settings' ),
+		PP_APP_NAME,
+		'manage_options',
+		strtolower( PP_APP_NAME ),
+		'pp_edit_settings'
+	);
 	add_action( 'admin_print_scripts-' . $pp_option_page, 'pp_admin_headers' );
+	add_action( 'load-' . $pp_option_page, 'pp_add_help_tab' );
 }
+
 /***********************************************************************
- * print admin headers
+ * Chargement du script admin
  **********************************************************************/
-function pp_admin_headers() {
-	 wp_enqueue_script( 'pp_admin_js' );
+function pp_admin_headers(): void {
+	wp_enqueue_script( 'pp_admin_js' );
 }
+
 /***********************************************************************
- * print admin scripts
+ * Injection des variables JS en admin (échappées)
  **********************************************************************/
-function pp_admin_print_scripts(){
+function pp_admin_print_scripts(): void {
 	global $pp_settings;
-	echo '<script type="text/javascript">
-var PP_SETTINGS_UPLOAD_DIR = "' . site_url( '/' . $pp_settings[PP_SETTINGS_UPLOAD_DIR] . '/' ) . '";
-var PP_SETTINGS_WIDTH = \'' . $pp_settings[PP_SETTINGS_WIDTH] . '\';
-var PP_SETTINGS_HEIGHT = \'' . $pp_settings[PP_SETTINGS_HEIGHT] . '\';
-</script>
-';
+	$upload_url = esc_js( site_url( '/' . $pp_settings[PP_SETTINGS_UPLOAD_DIR] . '/' ) );
+	$width      = esc_js( $pp_settings[PP_SETTINGS_WIDTH] ?? '' );
+	$height     = esc_js( $pp_settings[PP_SETTINGS_HEIGHT] ?? '' );
+	echo '<script>
+var PP_SETTINGS_UPLOAD_DIR = "' . $upload_url . '";
+var PP_SETTINGS_WIDTH = \'' . $width . '\';
+var PP_SETTINGS_HEIGHT = \'' . $height . '\';
+</script>';
 }
+
 /***********************************************************************
- * add tynymce plugin
+ * Plugin TinyMCE
  **********************************************************************/
-function pp_load_tinymce_plugin($plugin_array) {
+function pp_load_tinymce_plugin( array $plugin_array ): array {
 	$plugin_array['panopress'] = plugins_url( '/js/tinymce/editor_plugin.js', dirname( __FILE__ ) );
 	return $plugin_array;
 }
+
 /***********************************************************************
- * load tynymce button
+ * Bouton TinyMCE
  **********************************************************************/
-function pp_load_tynymce_button($buttons) {
-   array_push($buttons, 'separator', 'pp_button');
-   return $buttons;
+function pp_load_tynymce_button( array $buttons ): array {
+	array_push( $buttons, 'separator', 'pp_button' );
+	return $buttons;
 }
+
 /***********************************************************************
- * add tynymce button
+ * Ajout du bouton TinyMCE
  **********************************************************************/
-function pp_add_tynymce_button() {
-	if ( ! current_user_can( 'edit_posts' ) && ! current_user_can( 'edit_pages' ) )
+function pp_add_tynymce_button(): void {
+	if ( ! current_user_can( 'edit_posts' ) && ! current_user_can( 'edit_pages' ) ) {
 		return;
-	if ( get_user_option('rich_editing') == 'true') {
+	}
+	if ( get_user_option( 'rich_editing' ) === 'true' ) {
 		add_filter( 'mce_external_plugins', 'pp_load_tinymce_plugin' );
 		add_filter( 'mce_buttons', 'pp_load_tynymce_button' );
 	}
 }
+
 /***********************************************************************
- * add contextual help
+ * Onglet d'aide contextuelle (remplace le filtre contextual_help déprécié depuis WP 3.3)
  **********************************************************************/
-function pp_contextual_help( $contextual_help, $screen_id, $screen ) {
-	global $pp_option_page;
-	if ( $screen_id == $pp_option_page )
-		$contextual_help = '<a href="http://www.panopress.org/instructions/" target="_help">PanoPress ' . pp__('Documentation') . '</a>';
-	return $contextual_help;
+function pp_add_help_tab(): void {
+	$screen = get_current_screen();
+	if ( ! $screen ) {
+		return;
+	}
+	$screen->add_help_tab( [
+		'id'      => 'pp_help',
+		'title'   => pp__( 'Documentation' ),
+		'content' => '<p><a href="https://www.panopress.org/instructions/" target="_blank">PanoPress ' . esc_html( pp__( 'Documentation' ) ) . '</a></p>',
+	] );
 }
+
 /***********************************************************************
- * uninstall plugin
+ * Désinstallation du plugin
  **********************************************************************/
-function pp_uninstall() {
-    delete_option( PP_SETTINGS );
+function pp_uninstall(): void {
+	delete_option( PP_SETTINGS );
 }
+
 /***********************************************************************
- * register actions
+ * Enregistrement des actions admin
  **********************************************************************/
-if (is_admin()) {
+if ( is_admin() ) {
 	add_action( 'admin_init', 'pp_admin_init' );
 	add_action( 'admin_menu', 'pp_admin_menu' );
 	add_action( 'admin_print_scripts', 'pp_admin_print_scripts' );
-	add_filter( 'contextual_help', 'pp_contextual_help', 10, 3 );
-	register_uninstall_hook( __FILE__, 'pp_uninstall' );
+	// Le hook de désinstallation doit pointer vers le fichier principal du plugin.
+	register_uninstall_hook( dirname( dirname( __FILE__ ) ) . '/panopress.php', 'pp_uninstall' );
 }
+
 /***********************************************************************
- * get wp root directory
- * @path: path to add to root
+ * Retourne le chemin absolu vers la racine WordPress.
+ * Utilise ABSPATH (fiable) au lieu de $_SERVER['SCRIPT_FILENAME'].
+ *
+ * @param string $path Chemin à ajouter à la racine.
  **********************************************************************/
-function pp_wp_root($path = '') {
-	return substr( $_SERVER['SCRIPT_FILENAME'], 0, strpos($_SERVER['SCRIPT_FILENAME'], 'wp-admin' ) ) . trim( strtolower( $path ), '/' );
+function pp_wp_root( string $path = '' ): string {
+	return ABSPATH . ltrim( strtolower( $path ), '/' );
 }
+
 /***********************************************************************
- * create the edit page
+ * Page de réglages PanoPress
  **********************************************************************/
-function pp_edit_settings() {
+function pp_edit_settings(): void {
 	global $pp_wp_upload_dir, $pp_settings;
-	/* hadle post */
-	if ( ! empty( $_POST ) && $_POST['pp_action'] && is_admin() ) {
-		/* check nonce */
-		if ( ! wp_verify_nonce( $_POST['pp-nonce'], 'pp-settings-action') )
-		   die( pp__( 'Sorry, you can not post to this page (nonce did not verify).' ) );
-		 /* reset */
-		if ( $_POST['pp_action'] == 'reset' ) {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html( pp__( 'You do not have permission to access this page.' ) ) );
+	}
+
+	/* Traitement du formulaire */
+	if ( ! empty( $_POST ) && ! empty( $_POST['pp_action'] ) ) {
+
+		// Vérification du nonce CSRF
+		if ( ! wp_verify_nonce( $_POST['pp-nonce'] ?? '', 'pp-settings-action' ) ) {
+			wp_die( esc_html( pp__( 'Security check failed.' ) ) );
+		}
+
+		$pp_action = sanitize_key( $_POST['pp_action'] );
+
+		/* Réinitialisation */
+		if ( $pp_action === 'reset' ) {
 			delete_option( PP_SETTINGS );
 			pp_default_settings();
-			delete_option( PP_CSS );
-		} elseif ( $_POST['pp_action'] == 'update' ) { // update
-			$style = array();
-			$e = explode(',' , $_POST[PP_SETTINGS_PANOBOX  . '_' . PB_SETTINGS_STYLE]);
-			for($i = 0; $i < count($e); $i++){
-				$t = explode(':', $e[$i]);
-				$style[$t[0]] =  $t[1];
+
+		} elseif ( $pp_action === 'update' ) {
+
+			// Valeurs autorisées pour les selects
+			$allowed_wmode = [ 'auto', 'window', 'opaque', 'transparent' ];
+			$allowed_oppp  = [ PP_OPPP_ALL, PP_OPPP_MOBILE, PP_OPPP_DISABLED ];
+
+			// Traitement du style Panobox (format "clé:valeur,clé:valeur")
+			$style_raw = sanitize_text_field( $_POST[ PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_STYLE ] ?? '' );
+			$style     = [];
+			foreach ( explode( ',', $style_raw ) as $item ) {
+				$parts = explode( ':', $item, 2 );
+				if ( count( $parts ) === 2 ) {
+					$style[ sanitize_key( $parts[0] ) ] = sanitize_text_field( $parts[1] );
+				}
 			}
-			// pp settings
-			$pp_settings = array( );
-			$pp_settings[ PP_SETTINGS_WIDTH ]          = pp_check_size( $_POST[PP_SETTINGS_WIDTH] );
-			$pp_settings[ PP_SETTINGS_HEIGHT ]         = pp_check_size( $_POST[PP_SETTINGS_HEIGHT] );
-			$pp_settings[ PP_SETTINGS_UPLOAD_WP ]      = $_POST[PP_SETTINGS_UPLOAD_WP];
-			$pp_settings[ PP_SETTINGS_UPLOAD_DIR ]     = $pp_settings[PP_SETTINGS_UPLOAD_WP] ? $pp_wp_upload_dir : trim( strtolower( $_POST[PP_SETTINGS_UPLOAD_DIR] ), '/' );
-			$pp_settings[ PP_SETTINGS_VIEWER_DIR ]     = trim( strtolower( $_POST[PP_SETTINGS_VIEWER_DIR] ), '/' );
-			$pp_settings[ PP_SETTINGS_USE_VIEWER_DIR ] = $_POST[PP_SETTINGS_USE_VIEWER_DIR];
-			$pp_settings[ PP_SETTINGS_WMODE ]          = $_POST[PP_SETTINGS_WMODE];
-			$pp_settings[ PP_SETTINGS_OPPP ]           = $_POST[PP_SETTINGS_OPPP];
-			$pp_settings[ PP_SETTINGS_PANOBOX_WMODE ]  = $_POST[PP_SETTINGS_PANOBOX_WMODE];
-			$pp_settings[ PP_SETTINGS_PLAY_BUTTON ]    = $_POST[PP_SETTINGS_PLAY_BUTTON]    == '1';
-			$pp_settings[ PP_SETTINGS_PANOBOX_ACTIVE ] = $_POST[PP_SETTINGS_PANOBOX_ACTIVE] == '1';
-			$pp_settings[ PP_SETTINGS_PANOBOX_MOBILE ] = $_POST[PP_SETTINGS_PANOBOX_MOBILE] != '1';
-			$pp_settings[ PP_SETTINGS_CSS ]            = $_POST[PP_SETTINGS_CSS];
-			// pb settings
-			$pp_settings[ PP_SETTINGS_PANOBOX ]        = array( );
-			$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_FULLSCREEN ] = $_POST[PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_FULLSCREEN] == '1';
-			$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_FADE ]       = $_POST[PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_FADE]       == '1';
-			$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_ANIMATE ]    = $_POST[PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_ANIMATE]    == '1';
-			$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_SHADOW ]     = $_POST[PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_SHADOW]     == '1';
-			$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_WIDTH ]      = pp_check_size( $_POST[PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_WIDTH] );
-			$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_HEIGHT ]     = pp_check_size( $_POST[PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_HEIGHT] );
-			//$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_RESIZE ]     = true;
-			$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_STYLE ]      = $style;
-			$pp_settings[ PP_SETTINGS_PANOBOX ][ PB_SETTINGS_GALLERIES ]  = $_POST[PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_GALLERIES]     == '1';
-			/* save settings */
-			if ( get_option( PP_SETTINGS ) )
+
+			// Réglages PanoPress
+			$pp_settings = [];
+			$pp_settings[PP_SETTINGS_WIDTH]          = pp_check_size( sanitize_text_field( $_POST[PP_SETTINGS_WIDTH] ?? '' ) );
+			$pp_settings[PP_SETTINGS_HEIGHT]         = pp_check_size( sanitize_text_field( $_POST[PP_SETTINGS_HEIGHT] ?? '' ) );
+			$pp_settings[PP_SETTINGS_UPLOAD_WP]      = ! empty( $_POST[PP_SETTINGS_UPLOAD_WP] );
+			$pp_settings[PP_SETTINGS_UPLOAD_DIR]     = $pp_settings[PP_SETTINGS_UPLOAD_WP]
+				? $pp_wp_upload_dir
+				: trim( strtolower( sanitize_text_field( $_POST[PP_SETTINGS_UPLOAD_DIR] ?? '' ) ), '/' );
+			$pp_settings[PP_SETTINGS_VIEWER_DIR]     = trim( strtolower( sanitize_text_field( $_POST[PP_SETTINGS_VIEWER_DIR] ?? '' ) ), '/' );
+			$pp_settings[PP_SETTINGS_USE_VIEWER_DIR] = ! empty( $_POST[PP_SETTINGS_USE_VIEWER_DIR] );
+
+			$wmode = sanitize_key( $_POST[PP_SETTINGS_WMODE] ?? 'auto' );
+			$pp_settings[PP_SETTINGS_WMODE] = in_array( $wmode, $allowed_wmode, true ) ? $wmode : 'auto';
+
+			$oppp = sanitize_key( $_POST[PP_SETTINGS_OPPP] ?? PP_OPPP_MOBILE );
+			$pp_settings[PP_SETTINGS_OPPP] = in_array( $oppp, $allowed_oppp, true ) ? $oppp : PP_OPPP_MOBILE;
+
+			$pb_wmode = sanitize_key( $_POST[PP_SETTINGS_PANOBOX_WMODE] ?? 'auto' );
+			$pp_settings[PP_SETTINGS_PANOBOX_WMODE]  = in_array( $pb_wmode, $allowed_wmode, true ) ? $pb_wmode : 'auto';
+
+			$pp_settings[PP_SETTINGS_PLAY_BUTTON]    = ( ( $_POST[PP_SETTINGS_PLAY_BUTTON] ?? '' ) === '1' );
+			$pp_settings[PP_SETTINGS_PANOBOX_ACTIVE] = ( ( $_POST[PP_SETTINGS_PANOBOX_ACTIVE] ?? '' ) === '1' );
+			$pp_settings[PP_SETTINGS_PANOBOX_MOBILE] = ( ( $_POST[PP_SETTINGS_PANOBOX_MOBILE] ?? '' ) !== '1' );
+			$pp_settings[PP_SETTINGS_CSS]            = sanitize_textarea_field( $_POST[PP_SETTINGS_CSS] ?? '' );
+
+			// Réglages Panobox
+			$pp_settings[PP_SETTINGS_PANOBOX] = [];
+			$pb_key = PP_SETTINGS_PANOBOX . '_';
+			$pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FULLSCREEN] = ( ( $_POST[ $pb_key . PB_SETTINGS_FULLSCREEN ] ?? '' ) === '1' );
+			$pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FADE]       = ( ( $_POST[ $pb_key . PB_SETTINGS_FADE ]       ?? '' ) === '1' );
+			$pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_ANIMATE]    = ( ( $_POST[ $pb_key . PB_SETTINGS_ANIMATE ]    ?? '' ) === '1' );
+			$pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_SHADOW]     = ( ( $_POST[ $pb_key . PB_SETTINGS_SHADOW ]     ?? '' ) === '1' );
+			$pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_WIDTH]      = pp_check_size( sanitize_text_field( $_POST[ $pb_key . PB_SETTINGS_WIDTH ]  ?? '' ) );
+			$pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_HEIGHT]     = pp_check_size( sanitize_text_field( $_POST[ $pb_key . PB_SETTINGS_HEIGHT ] ?? '' ) );
+			$pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_STYLE]      = $style;
+			$pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_GALLERIES]  = ( ( $_POST[ $pb_key . PB_SETTINGS_GALLERIES ]  ?? '' ) === '1' );
+
+			/* Sauvegarde des réglages */
+			if ( get_option( PP_SETTINGS ) !== false ) {
 				update_option( PP_SETTINGS, $pp_settings );
-			else
+			} else {
 				add_option( PP_SETTINGS, $pp_settings );
+			}
 		}
 	}
-?>
+
+	// État des panneaux repliables (sanitisé)
+	$advanced_open = sanitize_key( $_POST['advanced_open'] ?? 'hide' );
+	$panobox_open  = sanitize_key( $_POST['panobox_open']  ?? 'hide' );
+	$display_adv   = $advanced_open === 'show' ? '' : 'none';
+	$display_pb    = $panobox_open  === 'show' ? '' : 'none';
+
+	// Données pour les selects de style Panobox
+	$pb_styles = [
+		'pb-light'    => [ 'label' => 'Light',    'overlay' => 'pb-light-overlay' ],
+		'pb-dark'     => [ 'label' => 'Dark',     'overlay' => 'pb-dark-overlay' ],
+		'pb-adaptive' => [ 'label' => 'Adaptive', 'overlay' => 'pb-adaptive-overlay' ],
+	];
+	$current_box = $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_STYLE][PB_SETTINGS_STYLE_BOX] ?? '';
+	?>
 <style type="text/css" media="screen">
-.pp-advanced-settings{display:<?php echo $_POST['advanced_open'] == 'show' ? '' : 'none'?>}
+.pp-advanced-settings{display:<?php echo esc_attr( $display_adv ); ?>}
 th, td{white-space:nowrap}
 label{padding-left:4px}
 input:disabled{opacity:.5}
 </style>
 <div class="wrap">
-<div style="float:right">Version <?php echo PP_APP_VERSION; ?></div>
+<div style="float:right">Version <?php echo esc_html( PP_APP_VERSION ); ?></div>
 <div id="icon-options-general" class="icon32"></div>
-<h2><?php echo PP_APP_NAME .' ' . pp__( 'Settings' ); ?></h2>
+<h2><?php echo esc_html( PP_APP_NAME . ' ' . pp__( 'Settings' ) ); ?></h2>
 <div id="pp_notify" style="margin-top:6px;font-weight:bold;display:none"></div>
-<form method="post" id="pp-settings" name="pp-settings" action="" enctype="multipart/form-data">
+<form method="post" id="pp-settings" name="pp-settings" action="">
 <input type="hidden" id="pp_action" name="pp_action" value="update" />
 <?php wp_nonce_field( 'pp-settings-action', 'pp-nonce', true ); ?>
 <table class="form-table">
 	<tr valign="top">
 		<th scope="row"><?php pp_e( 'Embed Size' ); ?></th>
-		<td colspan="2"> 
-			<?php pp_e( 'Width' ); ?>: <input type="text" name="<?php echo PP_SETTINGS_WIDTH; ?>" value="<?php echo $pp_settings[PP_SETTINGS_WIDTH] ? $pp_settings[PP_SETTINGS_WIDTH] : PP_DEFAULT_WIDTH; ?>" size="6" />
-			<?php pp_e( 'Height' ); ?>: <input type="text" name="<?php echo PP_SETTINGS_HEIGHT; ?>" value="<?php echo $pp_settings[PP_SETTINGS_HEIGHT] ? $pp_settings[PP_SETTINGS_HEIGHT] : PP_DEFAULT_HEIGHT; ?>" size="6" />
-			&nbsp;<span class="description"><?php pp_e( 'you may use px, %, em, or other standard' ); ?><a href="http://www.w3schools.com/cssref/css_units.asp" target="_blank"> <?php pp_e( 'CSS units' ); ?></a>. Examples: 800px, 100%, 2.5em, etc.</span>
-			<!--
-			<?php if ($pp_settings[PP_SETTINGS_WIDTH]  === null): ?>
-			<span class="error"><?php pp_e( 'The widht value is incorrect' ); ?></span>
-			<?php endif;?>
-			<?php if ($pp_settings[PP_SETTINGS_HEIGHT] === null): ?>
-			<span class="error"><?php pp_e( 'The height value is incorrect' ); ?></span>
-			<?php endif;?>
-			-->
+		<td colspan="2">
+			<?php pp_e( 'Width' ); ?>: <input type="text" name="<?php echo esc_attr( PP_SETTINGS_WIDTH ); ?>" value="<?php echo esc_attr( $pp_settings[PP_SETTINGS_WIDTH] ?: PP_DEFAULT_WIDTH ); ?>" size="6" />
+			<?php pp_e( 'Height' ); ?>: <input type="text" name="<?php echo esc_attr( PP_SETTINGS_HEIGHT ); ?>" value="<?php echo esc_attr( $pp_settings[PP_SETTINGS_HEIGHT] ?: PP_DEFAULT_HEIGHT ); ?>" size="6" />
+			&nbsp;<span class="description"><?php pp_e( 'you may use px, %, em, or other standard' ); ?> <a href="https://www.w3schools.com/cssref/css_units.asp" target="_blank"><?php pp_e( 'CSS units' ); ?></a>. Examples: 800px, 100%, 2.5em, etc.</span>
 		</td>
 	</tr>
 	<tr valign="top" style="background-color:#eee">
 		<th scope="row"><?php pp_e( 'Style' ); ?></th>
 		<td colspan="2">
-			<input id="play-button" name="<?php echo PP_SETTINGS_PLAY_BUTTON; ?>" value="1" type="checkbox"<?php if ( $pp_settings[PP_SETTINGS_PLAY_BUTTON] ) : ?> checked<?php endif; ?> /><label for="play-button"><?php pp_e( 'Show Play button' ); ?></label>
+			<input id="play-button" name="<?php echo esc_attr( PP_SETTINGS_PLAY_BUTTON ); ?>" value="1" type="checkbox"<?php checked( $pp_settings[PP_SETTINGS_PLAY_BUTTON] ); ?> />
+			<label for="play-button"><?php pp_e( 'Show Play button' ); ?></label>
 		</td>
 	</tr>
 	<tr valign="top">
-		<th scope="row">
-			<?php pp_e( 'Panobox' ); ?>
-		</th>
+		<th scope="row"><?php pp_e( 'Panobox' ); ?></th>
 		<td colspan="2">
-			
-			<input id="panobox-active" name="<?php echo PP_SETTINGS_PANOBOX_ACTIVE; ?>" value="1" type="checkbox"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX_ACTIVE] ) : ?> checked<?php endif; ?> /><label for="panobox-active"><?php pp_e( 'Open panoramas in Panobox' ); ?></label>
-			<input type="hidden" id="panobox-open" name="panobox_open" value="<?php echo ! isset($_POST['panobox_open']) || $_POST['panobox_open'] == 'hide' ? 'hide' : 'show' ?>"  />
+			<input id="panobox-active" name="<?php echo esc_attr( PP_SETTINGS_PANOBOX_ACTIVE ); ?>" value="1" type="checkbox"<?php checked( $pp_settings[PP_SETTINGS_PANOBOX_ACTIVE] ); ?> />
+			<label for="panobox-active"><?php pp_e( 'Open panoramas in Panobox' ); ?></label>
+			<input type="hidden" id="panobox-open" name="panobox_open" value="<?php echo esc_attr( $panobox_open ); ?>" />
 			<br />
-			<input id="panobox-galleries" name="<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_GALLERIES; ?>" value="1" type="checkbox"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_GALLERIES] ) : ?> checked<?php endif; ?> /><label for="panobox-galleries"><?php pp_e( 'Open image galleries in Panobox' ); ?></label>
-
+			<input id="panobox-galleries" name="<?php echo esc_attr( PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_GALLERIES ); ?>" value="1" type="checkbox"<?php checked( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_GALLERIES] ); ?> />
+			<label for="panobox-galleries"><?php pp_e( 'Open image galleries in Panobox' ); ?></label>
 			<br />
-			<a id="panobox-options-label" href="javascript:toggle_panobox_options()"><?php echo ! isset($_POST['panobox_open']) || $_POST['panobox_open'] == 'hide' ? 'Customize Panobox...' : 'Customize Panobox'; ?></a>
+			<a id="panobox-options-label" href="javascript:toggle_panobox_options()">
+				<?php echo $panobox_open === 'show' ? esc_html( pp__( 'Customize Panobox' ) ) : esc_html( pp__( 'Customize Panobox...' ) ); ?>
+			</a>
 			<br/>
-			<table id="panobox-options" style="<?php if( ! isset($_POST['panobox_open']) || $_POST['panobox_open'] == 'hide') : ?>display:none<?php endif; ?>" >
+			<table id="panobox-options" style="display:<?php echo esc_attr( $display_pb ); ?>">
 				<tr>
 					<td nowrap valign="top"><?php pp_e( 'Window Size' ); ?>:</td>
-					<td>		
-						<?php pp_e( 'Width' ); ?>: <input onchange="document.forms[0].<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_WIDTH; ?>.value = this.value" id="panobox-width"  type="text" value="<?php echo $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_WIDTH] ? $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_WIDTH] : PP_DEFAULT_WIDTH; ?>" size="6" <?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FULLSCREEN] ): ?>disabled="disabled" <?php endif; ?> />
-						<?php pp_e( 'Height' ); ?>: <input onchange="document.forms[0].<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_HEIGHT; ?>.value = this.value"id="panobox-height" type="text" value="<?php echo $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_HEIGHT] ? $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_HEIGHT] : PP_DEFAULT_HEIGHT; ?>" size="6" <?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FULLSCREEN] ): ?>disabled="disabled" <?php endif; ?> />						
-						<input type="hidden" name="<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_WIDTH; ?>" value="<?php echo $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_WIDTH] ? $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_WIDTH] : PP_DEFAULT_WIDTH; ?>" />
-						<input type="hidden" name="<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_HEIGHT; ?>" value="<?php echo $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_HEIGHT] ? $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_HEIGHT] : PP_DEFAULT_HEIGHT; ?>" />						
-						&nbsp;<span class="description"><?php pp_e( 'in CSS units' );?></span>
+					<td>
+						<?php
+						$pb_w_name = esc_attr( PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_WIDTH );
+						$pb_h_name = esc_attr( PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_HEIGHT );
+						$pb_w_val  = esc_attr( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_WIDTH]  ?: PP_DEFAULT_WIDTH );
+						$pb_h_val  = esc_attr( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_HEIGHT] ?: PP_DEFAULT_HEIGHT );
+						$fs_disabled = $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FULLSCREEN] ? ' disabled="disabled"' : '';
+						?>
+						<?php pp_e( 'Width' ); ?>: <input onchange="document.forms[0].<?php echo $pb_w_name; ?>.value = this.value" id="panobox-width" type="text" value="<?php echo $pb_w_val; ?>" size="6"<?php echo $fs_disabled; ?> />
+						<?php pp_e( 'Height' ); ?>: <input onchange="document.forms[0].<?php echo $pb_h_name; ?>.value = this.value" id="panobox-height" type="text" value="<?php echo $pb_h_val; ?>" size="6"<?php echo $fs_disabled; ?> />
+						<input type="hidden" name="<?php echo $pb_w_name; ?>" value="<?php echo $pb_w_val; ?>" />
+						<input type="hidden" name="<?php echo $pb_h_name; ?>" value="<?php echo $pb_h_val; ?>" />
+						&nbsp;<span class="description"><?php pp_e( 'in CSS units' ); ?></span>
 						<br />
-						<input id="panobox-fullscreen" onchange="toggle_panobox_fulscreen(this.checked)" name="<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_FULLSCREEN; ?>" value="1" type="checkbox"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FULLSCREEN] ) : ?> checked<?php endif; ?> /><label for="panobox-fullscreen"><?php pp_e( 'Use Fullscreen' ); ?></label> 
+						<input id="panobox-fullscreen" onchange="toggle_panobox_fulscreen(this.checked)" name="<?php echo esc_attr( PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_FULLSCREEN ); ?>" value="1" type="checkbox"<?php checked( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FULLSCREEN] ); ?> />
+						<label for="panobox-fullscreen"><?php pp_e( 'Use Fullscreen' ); ?></label>
 					</td>
 				</tr>
 				<tr>
 					<td><?php pp_e( 'Style' ); ?>:</td>
 					<td>
-						<select name="<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_STYLE; ?>">
-						<option value="<?php echo PB_SETTINGS_STYLE_BOX; ?>:pb-light,<?php echo PB_SETTINGS_STYLE_OVERLAY; ?>:pb-light-overlay"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_STYLE][PB_SETTINGS_STYLE_BOX] == 'pb-light' ) : ?> selected<?php endif; ?> />&nbsp;Light&nbsp;</option>
-						<option value="<?php echo PB_SETTINGS_STYLE_BOX; ?>:pb-dark,<?php echo PB_SETTINGS_STYLE_OVERLAY; ?>:pb-dark-overlay"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_STYLE][PB_SETTINGS_STYLE_BOX] == 'pb-dark' ) : ?> selected<?php endif; ?> />&nbsp;Dark&nbsp;</option>
-						<option value="<?php echo PB_SETTINGS_STYLE_BOX; ?>:pb-adaptive,<?php echo PB_SETTINGS_STYLE_OVERLAY; ?>:pb-adaptive-overlay"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_STYLE][PB_SETTINGS_STYLE_BOX] == 'pb-adaptive' ) : ?> selected<?php endif; ?> />&nbsp;Adaptive&nbsp;</option>
+						<select name="<?php echo esc_attr( PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_STYLE ); ?>">
+						<?php foreach ( $pb_styles as $box_class => $info ) :
+							$val = PB_SETTINGS_STYLE_BOX . ':' . $box_class . ',' . PB_SETTINGS_STYLE_OVERLAY . ':' . $info['overlay'];
+						?>
+						<option value="<?php echo esc_attr( $val ); ?>"<?php selected( $current_box, $box_class ); ?>>&nbsp;<?php echo esc_html( $info['label'] ); ?>&nbsp;</option>
+						<?php endforeach; ?>
 						</select>
 					</td>
 				</tr>
-				<tr>	
-					<td><?php pp_e( 'Effects' ); ?>:</td>	
-					<td>					
-						<input id="panobox-shadow" name="<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_SHADOW; ?>" value="1" type="checkbox"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_SHADOW] ) : ?> checked<?php endif; ?> /><label for="panobox-shadow"><?php pp_e( 'Drop-shadow' ); ?></label>
+				<tr>
+					<td><?php pp_e( 'Effects' ); ?>:</td>
+					<td>
+						<input id="panobox-shadow" name="<?php echo esc_attr( PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_SHADOW ); ?>" value="1" type="checkbox"<?php checked( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_SHADOW] ); ?> />
+						<label for="panobox-shadow"><?php pp_e( 'Drop-shadow' ); ?></label>
 						&nbsp;&nbsp;
-						<input id="panobox-fade" name="<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_FADE; ?>" value="1" type="checkbox"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FADE] ) : ?> checked<?php endif; ?> /><label for="panobox-fade"><?php pp_e( 'Fade-in/out' ); ?></label>
+						<input id="panobox-fade" name="<?php echo esc_attr( PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_FADE ); ?>" value="1" type="checkbox"<?php checked( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_FADE] ); ?> />
+						<label for="panobox-fade"><?php pp_e( 'Fade-in/out' ); ?></label>
 						&nbsp;&nbsp;
-						<input id="panobox-animate" name="<?php echo PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_ANIMATE; ?>" value="1" type="checkbox"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_ANIMATE] ) : ?> checked<?php endif; ?> /><label for="panobox-animate"><?php pp_e( 'Animated window resize' ); ?></label>
+						<input id="panobox-animate" name="<?php echo esc_attr( PP_SETTINGS_PANOBOX . '_' . PB_SETTINGS_ANIMATE ); ?>" value="1" type="checkbox"<?php checked( $pp_settings[PP_SETTINGS_PANOBOX][PB_SETTINGS_ANIMATE] ); ?> />
+						<label for="panobox-animate"><?php pp_e( 'Animated window resize' ); ?></label>
 					</td>
 				</tr>
 				<tr>
 					<td><?php pp_e( 'Mobile' ); ?>:</td>
 					<td>
-						<input id="panobox-mobile" name="<?php echo PP_SETTINGS_PANOBOX_MOBILE; ?>" value="1" type="checkbox"<?php if ( !$pp_settings[PP_SETTINGS_PANOBOX_MOBILE] ) : ?> checked<?php endif; ?> /><label for="panobox-mobile"><?php pp_e( 'Don\'t use Panobox for mobile devices' ); ?></label>
+						<input id="panobox-mobile" name="<?php echo esc_attr( PP_SETTINGS_PANOBOX_MOBILE ); ?>" value="1" type="checkbox"<?php checked( ! $pp_settings[PP_SETTINGS_PANOBOX_MOBILE] ); ?> />
+						<label for="panobox-mobile"><?php pp_e( "Don't use Panobox for mobile devices" ); ?></label>
 					</td>
 				</tr>
 			</table>
@@ -242,87 +333,94 @@ input:disabled{opacity:.5}
 	<tr valign="top" class="pp-advanced-settings" style="background-color:#eee">
 		<th scope="row"><?php pp_e( 'Upload Folder' ); ?></th>
 		<td colspan="2">
-			<input id="upload-sys" onchange="toggle_wp_ul(this.checked, '<?php echo $pp_wp_upload_dir; ?>' )" type="checkbox" name="<?php echo PP_SETTINGS_UPLOAD_WP; ?>" value="true"<?php if ( $pp_settings[PP_SETTINGS_UPLOAD_WP] ) : ?> checked<?php endif; ?> /><label for="upload-sys"><?php pp_e( 'Use WordPress upload folder' ); ?></label> (<?php echo $pp_wp_upload_dir; ?>)
+			<input id="upload-sys" onchange="toggle_wp_ul(this.checked, '<?php echo esc_js( $pp_wp_upload_dir ); ?>')" type="checkbox" name="<?php echo esc_attr( PP_SETTINGS_UPLOAD_WP ); ?>" value="true"<?php checked( $pp_settings[PP_SETTINGS_UPLOAD_WP] ); ?> />
+			<label for="upload-sys"><?php pp_e( 'Use WordPress upload folder' ); ?></label> (<?php echo esc_html( $pp_wp_upload_dir ); ?>)
 			<br />
-			Folder Path:&nbsp;<input  style="width:320px"  id="upload-dir" <?php if ( $pp_settings[PP_SETTINGS_UPLOAD_WP] ): ?>disabled="disabled" <?php endif; ?>type="text" name="<?php echo PP_SETTINGS_UPLOAD_DIR; ?>" value="<?php echo $pp_settings[PP_SETTINGS_UPLOAD_WP] ? $pp_wp_upload_dir : $pp_settings[PP_SETTINGS_UPLOAD_DIR]; ?>" size="36" /><?php if ( ! is_dir( pp_wp_root( $pp_settings[PP_SETTINGS_UPLOAD_DIR] ) ) ) : ?><span class="error"><?php pp_e( 'Folder does not exist' ); ?></span><?php endif;?>
+			Folder Path:&nbsp;<input style="width:320px" id="upload-dir"<?php disabled( $pp_settings[PP_SETTINGS_UPLOAD_WP] ); ?> type="text" name="<?php echo esc_attr( PP_SETTINGS_UPLOAD_DIR ); ?>" value="<?php echo esc_attr( $pp_settings[PP_SETTINGS_UPLOAD_WP] ? $pp_wp_upload_dir : $pp_settings[PP_SETTINGS_UPLOAD_DIR] ); ?>" size="36" />
+			<?php if ( ! is_dir( pp_wp_root( $pp_settings[PP_SETTINGS_UPLOAD_DIR] ) ) ) : ?>
+			<span class="error"><?php pp_e( 'Folder does not exist' ); ?></span>
+			<?php endif; ?>
 		</td>
 	</tr>
 	<tr valign="top" class="pp-advanced-settings">
 		<th scope="row"><?php pp_e( 'Global Viewer' ); ?></th>
 		<td colspan="2">
-			<input id="use-viewer-dir" onchange="toggle_viewer_folder(this.checked)" type="checkbox" name="<?php echo PP_SETTINGS_USE_VIEWER_DIR; ?>" value="true"<?php if ( $pp_settings[PP_SETTINGS_USE_VIEWER_DIR] ) : ?> checked<?php endif; ?> /><label for="use-viewer-dir"><?php pp_e( 'Use Global Viewer' ); ?></label>&nbsp;<span class="description">(<?php pp_e( 'KRPano & FPP only' ); ?> <a target="_blank" href="http://www.panopress.org/krpano-global-swf/"><?php pp_e( 'learn more' ); ?></a>)</span>
+			<input id="use-viewer-dir" onchange="toggle_viewer_folder(this.checked)" type="checkbox" name="<?php echo esc_attr( PP_SETTINGS_USE_VIEWER_DIR ); ?>" value="true"<?php checked( $pp_settings[PP_SETTINGS_USE_VIEWER_DIR] ); ?> />
+			<label for="use-viewer-dir"><?php pp_e( 'Use Global Viewer' ); ?></label>&nbsp;<span class="description">(<?php pp_e( 'KRPano & FPP only' ); ?> <a target="_blank" href="https://www.panopress.org/krpano-global-swf/"><?php pp_e( 'learn more' ); ?></a>)</span>
 			<br />
-			Folder Path:&nbsp;<input style="width:320px" id="viewer-dir" <?php if ( ! $pp_settings[PP_SETTINGS_USE_VIEWER_DIR] ): ?>disabled="disabled" <?php endif; ?>type="text" value="<?php echo $pp_settings[PP_SETTINGS_VIEWER_DIR]; ?>" /><?php if ( ! is_dir( pp_wp_root( $pp_settings[PP_SETTINGS_VIEWER_DIR] ) ) && $pp_settings[PP_SETTINGS_USE_VIEWER_DIR] ) : ?><span class="error"><?php pp_e( 'Folder does not exist' ); ?></span><?php endif;?>
-			<input type="hidden" id="viewer-dir-hidden" name="<?php echo PP_SETTINGS_VIEWER_DIR; ?>" value="<?php echo $pp_settings[PP_SETTINGS_VIEWER_DIR]; ?>" />
+			Folder Path:&nbsp;<input style="width:320px" id="viewer-dir"<?php disabled( ! $pp_settings[PP_SETTINGS_USE_VIEWER_DIR] ); ?> type="text" value="<?php echo esc_attr( $pp_settings[PP_SETTINGS_VIEWER_DIR] ); ?>" />
+			<?php if ( ! is_dir( pp_wp_root( $pp_settings[PP_SETTINGS_VIEWER_DIR] ) ) && $pp_settings[PP_SETTINGS_USE_VIEWER_DIR] ) : ?>
+			<span class="error"><?php pp_e( 'Folder does not exist' ); ?></span>
+			<?php endif; ?>
+			<input type="hidden" id="viewer-dir-hidden" name="<?php echo esc_attr( PP_SETTINGS_VIEWER_DIR ); ?>" value="<?php echo esc_attr( $pp_settings[PP_SETTINGS_VIEWER_DIR] ); ?>" />
 		</td>
 	</tr>
 	<tr valign="top" class="pp-advanced-settings" style="background-color:#eee">
 		<th scope="row"><?php pp_e( 'Performance' ); ?></th>
 		<td colspan="2">
-		<?php pp_e( 'Only one active panorama per page for' ); ?>:
-		<select name="<?php echo PP_SETTINGS_OPPP; ?>">
-			<option value="<?php echo PP_OPPP_DISABLED; ?>"<?php if ( $pp_settings[PP_SETTINGS_OPPP] == PP_OPPP_DISABLED ) : ?> selected<?php endif; ?> /><?php pp_e( 'None' ); ?></option>
-			<option value="<?php echo PP_OPPP_MOBILE; ?>"<?php if ( $pp_settings[PP_SETTINGS_OPPP] == PP_OPPP_MOBILE ) : ?> selected<?php endif; ?> /><?php pp_e( 'Mobile devices' ); ?>&nbsp;</option>
-			<option value="<?php echo PP_OPPP_ALL; ?>"<?php if ( $pp_settings[PP_SETTINGS_OPPP] == PP_OPPP_ALL ) : ?> selected<?php endif; ?> /><?php pp_e( 'All devices' ); ?></option>
-		</select>
+			<?php pp_e( 'Only one active panorama per page for' ); ?>:
+			<select name="<?php echo esc_attr( PP_SETTINGS_OPPP ); ?>">
+				<option value="<?php echo esc_attr( PP_OPPP_DISABLED ); ?>"<?php selected( $pp_settings[PP_SETTINGS_OPPP], PP_OPPP_DISABLED ); ?>><?php pp_e( 'None' ); ?></option>
+				<option value="<?php echo esc_attr( PP_OPPP_MOBILE ); ?>"<?php selected( $pp_settings[PP_SETTINGS_OPPP], PP_OPPP_MOBILE ); ?>><?php pp_e( 'Mobile devices' ); ?>&nbsp;</option>
+				<option value="<?php echo esc_attr( PP_OPPP_ALL ); ?>"<?php selected( $pp_settings[PP_SETTINGS_OPPP], PP_OPPP_ALL ); ?>><?php pp_e( 'All devices' ); ?></option>
+			</select>
 		</td>
 	</tr>
 	<tr valign="top" class="pp-advanced-settings">
 		<th scope="row"><?php pp_e( 'Flash window mode' ); ?><br/>('wmode')</th>
 		<td colspan="2">
 		<?php pp_e( 'Embedded panoramas' ); ?>:&nbsp;
-		<select name="<?php echo PP_SETTINGS_WMODE; ?>">
-			<option value="auto"<?php if ( $pp_settings[PP_SETTINGS_WMODE] == 'auto' ) : ?> selected<?php endif; ?> />Auto</option>
-			<option value="window"<?php if ( $pp_settings[PP_SETTINGS_WMODE] == 'window' ) : ?> selected<?php endif; ?> />Window</option>
-			<option value="opaque"<?php if ( $pp_settings[PP_SETTINGS_WMODE] == 'opaque' ) : ?> selected<?php endif; ?> />Opaque</option>
-			<option value="transparent"<?php if ( $pp_settings[PP_SETTINGS_WMODE] == 'transparent' ) : ?> selected<?php endif; ?> />Transparent&nbsp;</option>
+		<select name="<?php echo esc_attr( PP_SETTINGS_WMODE ); ?>">
+			<?php foreach ( [ 'auto' => 'Auto', 'window' => 'Window', 'opaque' => 'Opaque', 'transparent' => 'Transparent' ] as $val => $label ) : ?>
+			<option value="<?php echo esc_attr( $val ); ?>"<?php selected( $pp_settings[PP_SETTINGS_WMODE], $val ); ?>><?php echo esc_html( $label ); ?></option>
+			<?php endforeach; ?>
 		</select>
 		&nbsp;&nbsp;
 		<?php pp_e( 'Panobox' ); ?>:&nbsp;
-		<select name="<?php echo PP_SETTINGS_PANOBOX_WMODE; ?>">
-			<option value="auto"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX_WMODE] == 'auto' ) : ?> selected<?php endif; ?> />Auto</option>
-			<option value="window"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX_WMODE] == 'window' ) : ?> selected<?php endif; ?> />Window</option>
-			<option value="opaque"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX_WMODE] == 'opaque' ) : ?> selected<?php endif; ?> />Opaque</option>
-			<option value="transparent"<?php if ( $pp_settings[PP_SETTINGS_PANOBOX_WMODE] == 'transparent' ) : ?> selected<?php endif; ?> />Transparent&nbsp;</option>
+		<select name="<?php echo esc_attr( PP_SETTINGS_PANOBOX_WMODE ); ?>">
+			<?php foreach ( [ 'auto' => 'Auto', 'window' => 'Window', 'opaque' => 'Opaque', 'transparent' => 'Transparent' ] as $val => $label ) : ?>
+			<option value="<?php echo esc_attr( $val ); ?>"<?php selected( $pp_settings[PP_SETTINGS_PANOBOX_WMODE], $val ); ?>><?php echo esc_html( $label ); ?></option>
+			<?php endforeach; ?>
 		</select>
 		</td>
 	</tr>
 	<tr valign="top" class="pp-advanced-settings" style="background-color:#eee">
-		<th scope="row" style="padding-top:20px">
-			<?php pp_e( 'CSS' ); ?>
-		</th>
+		<th scope="row" style="padding-top:20px"><?php pp_e( 'CSS' ); ?></th>
 		<td>
-			<textarea name="<?php echo PP_SETTINGS_CSS; ?>" style="margin-top:10px;width:400px; height:80px"><?php echo $pp_settings[PP_SETTINGS_CSS]; ?></textarea>
-			<a href="http://www.panopress.org/css/" target="_blank"><?php pp_e( 'Class reference' ); ?></a>
+			<textarea name="<?php echo esc_attr( PP_SETTINGS_CSS ); ?>" style="margin-top:10px;width:400px;height:80px"><?php echo esc_textarea( $pp_settings[PP_SETTINGS_CSS] ?? '' ); ?></textarea>
+			<a href="https://www.panopress.org/css/" target="_blank"><?php pp_e( 'Class reference' ); ?></a>
 		</td>
 	</tr>
 	<tr>
-		<td><input type="button" onclick="toggle_advanced()" id="toggle-advanced" class="button-secondary" value="<?php echo $_POST['advanced_open'] == 'show' ? 'Hide' : 'Show'?> advanced options" /></td>
+		<td>
+			<input type="button" onclick="toggle_advanced()" id="toggle-advanced" class="button-secondary" value="<?php echo esc_attr( $advanced_open === 'show' ? pp__( 'Hide' ) : pp__( 'Show' ) ); ?> <?php pp_e( 'advanced options' ); ?>" />
+		</td>
 		<td colspan="2">
-			<input type="submit" onclick="return submit_form()" class="button-primary" value="<?php pp_e( 'Save Changes' ); ?>" />
+			<input type="submit" onclick="return submit_form()" class="button-primary" value="<?php esc_attr_e( 'Save Changes', 'panopress' ); ?>" />
 			&nbsp;&nbsp;
-			<input type="button" onclick="reset_form()" class="button-secondary" value="<?php pp_e( 'Reset to defaults' ); ?>" />
+			<input type="button" onclick="reset_form()" class="button-secondary" value="<?php esc_attr_e( 'Reset to defaults', 'panopress' ); ?>" />
 		</td>
 	</tr>
 	<tr>
-		<td colspan="3"><a href="http://www.panopress.org/instructions/" target="_blank"><?php echo PP_APP_NAME; ?> <?php pp_e( 'Instructions' ); ?></a></td>
+		<td colspan="3"><a href="https://www.panopress.org/instructions/" target="_blank"><?php echo esc_html( PP_APP_NAME ); ?> <?php pp_e( 'Instructions' ); ?></a></td>
 	</tr>
-<input type="hidden" id="advanced-open" name="advanced_open" value="<?php echo ! isset($_POST['advanced_open']) || $_POST['advanced_open'] == 'hide' ? 'hide' : 'show' ?>"  />
+</table>
+<input type="hidden" id="advanced-open" name="advanced_open" value="<?php echo esc_attr( $advanced_open ); ?>" />
 </form>
 </div>
-<script type="text/javascript">
+<script>
 //<![CDATA[
-$pp2 = jQuery.noConflict();
+var $pp2 = jQuery.noConflict();
 $pp2(function(){
 	if(typeof pp_loaded == 'undefined'){
 		$pp2.ajax({
-		url: '<?php echo plugins_url( '/js/admin.js', dirname( __FILE__ ) ); ?>',
-			error: function(XMLHttpRequest, textStatus, errorThrown){
+			url: '<?php echo esc_js( plugins_url( '/js/admin.js', dirname( __FILE__ ) ) ); ?>',
+			error: function(xhr){
 				var msg = '', n = $pp2('#pp_notify');
-				switch (XMLHttpRequest.status){
-					case 403: msg = '<?php pp_e( 'Error: 403, The access to some of ' . PP_APP_NAME . ' files was forbidden by the server.<br/>you may need to change the ' . PP_APP_NAME . ' folder permissions.' ); ?>'; break;
-					case 404: msg = '<?php pp_e( 'Error: 404, Some of ' . PP_APP_NAME . ' files was not found.' ); ?>'; break;
-					default:  msg = 'Error: ' + XMLHttpRequest.status + ', ' + XMLHttpRequest.statusText + '.';
+				switch(xhr.status){
+					case 403: msg = '<?php echo esc_js( pp__( 'Error: 403, The access to some of ' . PP_APP_NAME . ' files was forbidden by the server. You may need to change the ' . PP_APP_NAME . ' folder permissions.' ) ); ?>'; break;
+					case 404: msg = '<?php echo esc_js( pp__( 'Error: 404, Some of ' . PP_APP_NAME . ' files were not found.' ) ); ?>'; break;
+					default:  msg = 'Error: ' + xhr.status + ', ' + xhr.statusText + '.';
 				}
 				n.html(msg);
 				n.addClass('error');
@@ -333,7 +431,6 @@ $pp2(function(){
 });
 //]]>
 </script>
-<!-- <?php echo '/' . PP_APP_NAME . ' settings'; ?> -->
-<?php
+<!-- /<?php echo esc_html( PP_APP_NAME ); ?> settings -->
+	<?php
 }
-?>
