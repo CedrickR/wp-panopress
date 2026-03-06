@@ -32,72 +32,73 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // CONFIG
-define( 'PP_APP_NAME',    'PanoPress' );
-define( 'PP_APP_VERSION', '1.3.0' );
+defined( 'PP_APP_NAME'    ) || define( 'PP_APP_NAME',    'PanoPress' );
+defined( 'PP_APP_VERSION' ) || define( 'PP_APP_VERSION', '1.3.0' );
 // defaults
-define( 'PP_DEFAULT_WIDTH',         '640px' );
-define( 'PP_DEFAULT_HEIGHT',        '480px' );
-define( 'PP_DEFAULT_FLASH_VERSION', '9.0.28' );
+defined( 'PP_DEFAULT_WIDTH'         ) || define( 'PP_DEFAULT_WIDTH',         '640px' );
+defined( 'PP_DEFAULT_HEIGHT'        ) || define( 'PP_DEFAULT_HEIGHT',        '480px' );
+defined( 'PP_DEFAULT_FLASH_VERSION' ) || define( 'PP_DEFAULT_FLASH_VERSION', '9.0.28' );
 // options
-define( 'PP_FILE_TYPE_FILTERING',     true );  // empêche les types inconnus d'être traités comme HTML
-define( 'PP_ALLOW_UNKNOWN_FILE_TYPES', false ); // autorise ou non les types non reconnus
-define( 'PP_PANOBOX_IMAGES',          true );  // active l'ouverture des images en panobox
+defined( 'PP_FILE_TYPE_FILTERING'     ) || define( 'PP_FILE_TYPE_FILTERING',     true );
+defined( 'PP_ALLOW_UNKNOWN_FILE_TYPES') || define( 'PP_ALLOW_UNKNOWN_FILE_TYPES', false );
+defined( 'PP_PANOBOX_IMAGES'          ) || define( 'PP_PANOBOX_IMAGES',           true );
 // viewers
-define( 'PP_VIEWER_NAME_KRPANO',  'krpano' );
-define( 'PP_VIEWER_NAME_PANO2VR', 'pano2vr' );
-define( 'PP_VIEWER_NAME_FPP',     'fpp' );
-define( 'PP_VIEWER_NAME_CUTY',    'cuty' );
-define( 'PP_VIEWER_TYPE_FLASH',   'flash' );
-define( 'PP_VIEWER_TYPE_HTML',    'html' );
-define( 'PP_VIEWER_TYPE_LINK',    'link' );
+defined( 'PP_VIEWER_NAME_KRPANO'  ) || define( 'PP_VIEWER_NAME_KRPANO',  'krpano' );
+defined( 'PP_VIEWER_NAME_PANO2VR' ) || define( 'PP_VIEWER_NAME_PANO2VR', 'pano2vr' );
+defined( 'PP_VIEWER_NAME_FPP'     ) || define( 'PP_VIEWER_NAME_FPP',     'fpp' );
+defined( 'PP_VIEWER_NAME_CUTY'    ) || define( 'PP_VIEWER_NAME_CUTY',    'cuty' );
+defined( 'PP_VIEWER_TYPE_FLASH'   ) || define( 'PP_VIEWER_TYPE_FLASH',   'flash' );
+defined( 'PP_VIEWER_TYPE_HTML'    ) || define( 'PP_VIEWER_TYPE_HTML',    'html' );
+defined( 'PP_VIEWER_TYPE_LINK'    ) || define( 'PP_VIEWER_TYPE_LINK',    'link' );
 // file types
-define( 'PP_FILE_TYPE_SWF',     'swf' );
-define( 'PP_FILE_TYPE_XML',     'xml' );
-define( 'PP_FILE_TYPE_MOV',     'mov' );
-define( 'PP_FILE_TYPE_HTML',    'html' );
-define( 'PP_FILE_TYPE_UNKNOWN', 'unknown' );
+defined( 'PP_FILE_TYPE_SWF'     ) || define( 'PP_FILE_TYPE_SWF',     'swf' );
+defined( 'PP_FILE_TYPE_XML'     ) || define( 'PP_FILE_TYPE_XML',     'xml' );
+defined( 'PP_FILE_TYPE_MOV'     ) || define( 'PP_FILE_TYPE_MOV',     'mov' );
+defined( 'PP_FILE_TYPE_HTML'    ) || define( 'PP_FILE_TYPE_HTML',    'html' );
+defined( 'PP_FILE_TYPE_UNKNOWN' ) || define( 'PP_FILE_TYPE_UNKNOWN', 'unknown' );
 // setting keys, DO NOT EDIT
-define( 'PP_SETTINGS',                'panopress_settings' );
-define( 'PP_SETTINGS_ID',             'id' );
-define( 'PP_SETTINGS_FILE',           'file' );
-define( 'PP_SETTINGS_PARAMS',         'params' );
-define( 'PP_SETTINGS_VIEWER_NAME',    'viewer' );
-define( 'PP_SETTINGS_VIEWER_TYPE',    'type' );
-define( 'PP_SETTINGS_VIEWER_VRSION',  'version' );
-define( 'PP_SETTINGS_WIDTH',          'width' );
-define( 'PP_SETTINGS_HEIGHT',         'height' );
-define( 'PP_SETTINGS_ALT',            'alt' );
-define( 'PP_SETTINGS_TITLE',          'title' );
-define( 'PP_SETTINGS_PREVIEW',        'preview' );
-define( 'PP_SETTINGS_PLAY_BUTTON',    'button' );
-define( 'PP_SETTINGS_UPLOAD_DIR',     'upload_dir' );
-define( 'PP_SETTINGS_UPLOAD_WP',      'upload_wp' );
-define( 'PP_SETTINGS_WMODE',          'wmode' );
-define( 'PP_SETTINGS_PANOBOX',        'panobox' );
-define( 'PP_SETTINGS_PANOBOX_WMODE',  'pbwmode' );
-define( 'PP_SETTINGS_PANOBOX_ACTIVE', 'pbactive' );
-define( 'PP_SETTINGS_PANOBOX_MOBILE', 'pbmobile' );
-define( 'PP_SETTINGS_VIEWER_DIR',     'viewer_dir' );
-define( 'PP_SETTINGS_USE_VIEWER_DIR', 'use_viewer_dir' );
-define( 'PP_SETTINGS_OPPP',           'oppp' );
-define( 'PP_SETTINGS_CSS',            'css' );
+defined( 'PP_SETTINGS'                ) || define( 'PP_SETTINGS',                'panopress_settings' );
+defined( 'PP_SETTINGS_ID'             ) || define( 'PP_SETTINGS_ID',             'id' );
+defined( 'PP_SETTINGS_FILE'           ) || define( 'PP_SETTINGS_FILE',           'file' );
+defined( 'PP_SETTINGS_PARAMS'         ) || define( 'PP_SETTINGS_PARAMS',         'params' );
+defined( 'PP_SETTINGS_VIEWER_NAME'    ) || define( 'PP_SETTINGS_VIEWER_NAME',    'viewer' );
+defined( 'PP_SETTINGS_VIEWER_TYPE'    ) || define( 'PP_SETTINGS_VIEWER_TYPE',    'type' );
+defined( 'PP_SETTINGS_VIEWER_VRSION'  ) || define( 'PP_SETTINGS_VIEWER_VRSION',  'version' );
+defined( 'PP_SETTINGS_TYPE'           ) || define( 'PP_SETTINGS_TYPE',           'filetype' ); // clé extension fichier (swf/xml/mov…)
+defined( 'PP_SETTINGS_WIDTH'          ) || define( 'PP_SETTINGS_WIDTH',          'width' );
+defined( 'PP_SETTINGS_HEIGHT'         ) || define( 'PP_SETTINGS_HEIGHT',         'height' );
+defined( 'PP_SETTINGS_ALT'            ) || define( 'PP_SETTINGS_ALT',            'alt' );
+defined( 'PP_SETTINGS_TITLE'          ) || define( 'PP_SETTINGS_TITLE',          'title' );
+defined( 'PP_SETTINGS_PREVIEW'        ) || define( 'PP_SETTINGS_PREVIEW',        'preview' );
+defined( 'PP_SETTINGS_PLAY_BUTTON'    ) || define( 'PP_SETTINGS_PLAY_BUTTON',    'button' );
+defined( 'PP_SETTINGS_UPLOAD_DIR'     ) || define( 'PP_SETTINGS_UPLOAD_DIR',     'upload_dir' );
+defined( 'PP_SETTINGS_UPLOAD_WP'      ) || define( 'PP_SETTINGS_UPLOAD_WP',      'upload_wp' );
+defined( 'PP_SETTINGS_WMODE'          ) || define( 'PP_SETTINGS_WMODE',          'wmode' );
+defined( 'PP_SETTINGS_PANOBOX'        ) || define( 'PP_SETTINGS_PANOBOX',        'panobox' );
+defined( 'PP_SETTINGS_PANOBOX_WMODE'  ) || define( 'PP_SETTINGS_PANOBOX_WMODE',  'pbwmode' );
+defined( 'PP_SETTINGS_PANOBOX_ACTIVE' ) || define( 'PP_SETTINGS_PANOBOX_ACTIVE', 'pbactive' );
+defined( 'PP_SETTINGS_PANOBOX_MOBILE' ) || define( 'PP_SETTINGS_PANOBOX_MOBILE', 'pbmobile' );
+defined( 'PP_SETTINGS_VIEWER_DIR'     ) || define( 'PP_SETTINGS_VIEWER_DIR',     'viewer_dir' );
+defined( 'PP_SETTINGS_USE_VIEWER_DIR' ) || define( 'PP_SETTINGS_USE_VIEWER_DIR', 'use_viewer_dir' );
+defined( 'PP_SETTINGS_OPPP'           ) || define( 'PP_SETTINGS_OPPP',           'oppp' );
+defined( 'PP_SETTINGS_CSS'            ) || define( 'PP_SETTINGS_CSS',            'css' );
 // panobox
-define( 'PB_SETTINGS_FULLSCREEN',    'fullscreen' );
-define( 'PB_SETTINGS_WIDTH',         'width' );
-define( 'PB_SETTINGS_HEIGHT',        'height' );
-define( 'PB_SETTINGS_FADE',          'fade' );
-define( 'PB_SETTINGS_ANIMATE',       'animate' );
-define( 'PB_SETTINGS_SHADOW',        'shadow' );
-define( 'PB_SETTINGS_RESIZE',        'resize' );
-define( 'PB_SETTINGS_STYLE',         'style' );
-define( 'PB_SETTINGS_STYLE_BOX',     'box' );
-define( 'PB_SETTINGS_STYLE_OVERLAY', 'overlay' );
-define( 'PB_SETTINGS_GALLERIES',     'galleries' );
-define( 'PB_SETTINGS_BG_OPACITY',   'bg_opacity' );
+defined( 'PB_SETTINGS_FULLSCREEN'    ) || define( 'PB_SETTINGS_FULLSCREEN',    'fullscreen' );
+defined( 'PB_SETTINGS_WIDTH'         ) || define( 'PB_SETTINGS_WIDTH',         'width' );
+defined( 'PB_SETTINGS_HEIGHT'        ) || define( 'PB_SETTINGS_HEIGHT',        'height' );
+defined( 'PB_SETTINGS_FADE'          ) || define( 'PB_SETTINGS_FADE',          'fade' );
+defined( 'PB_SETTINGS_ANIMATE'       ) || define( 'PB_SETTINGS_ANIMATE',       'animate' );
+defined( 'PB_SETTINGS_SHADOW'        ) || define( 'PB_SETTINGS_SHADOW',        'shadow' );
+defined( 'PB_SETTINGS_RESIZE'        ) || define( 'PB_SETTINGS_RESIZE',        'resize' );
+defined( 'PB_SETTINGS_STYLE'         ) || define( 'PB_SETTINGS_STYLE',         'style' );
+defined( 'PB_SETTINGS_STYLE_BOX'     ) || define( 'PB_SETTINGS_STYLE_BOX',     'box' );
+defined( 'PB_SETTINGS_STYLE_OVERLAY' ) || define( 'PB_SETTINGS_STYLE_OVERLAY', 'overlay' );
+defined( 'PB_SETTINGS_GALLERIES'     ) || define( 'PB_SETTINGS_GALLERIES',     'galleries' );
+defined( 'PB_SETTINGS_BG_OPACITY'    ) || define( 'PB_SETTINGS_BG_OPACITY',    'bg_opacity' );
 // one pano per page
-define( 'PP_OPPP_ALL',      'all' );
-define( 'PP_OPPP_MOBILE',   'mobile' );
-define( 'PP_OPPP_DISABLED', 'disabled' );
+defined( 'PP_OPPP_ALL'      ) || define( 'PP_OPPP_ALL',      'all' );
+defined( 'PP_OPPP_MOBILE'   ) || define( 'PP_OPPP_MOBILE',   'mobile' );
+defined( 'PP_OPPP_DISABLED' ) || define( 'PP_OPPP_DISABLED', 'disabled' );
 
 /**/
 $pp_wp_upload_arr = wp_upload_dir();
