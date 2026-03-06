@@ -93,6 +93,7 @@ define( 'PB_SETTINGS_STYLE',         'style' );
 define( 'PB_SETTINGS_STYLE_BOX',     'box' );
 define( 'PB_SETTINGS_STYLE_OVERLAY', 'overlay' );
 define( 'PB_SETTINGS_GALLERIES',     'galleries' );
+define( 'PB_SETTINGS_BG_OPACITY',   'bg_opacity' );
 // one pano per page
 define( 'PP_OPPP_ALL',      'all' );
 define( 'PP_OPPP_MOBILE',   'mobile' );
